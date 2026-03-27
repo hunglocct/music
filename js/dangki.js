@@ -37,7 +37,7 @@
                 btn.disabled = true;
 
                 // 1. Kiểm tra tài khoản đã tồn tại chưa
-                let checkRes = await fetch(API_URL);
+                let checkRes = await fetch(ACCOUNTS_API_URL);
                 if (checkRes.ok) {
                     let users = await checkRes.json();
                     let accountExists = users.some(u => u.acc === acc || u.email === email);
@@ -52,7 +52,7 @@
                 btn.innerText = "Đang xử lý...";
 
                 // 2. Nếu hợp lệ thì mới đăng ký
-                let response = await fetch(API_URL, {
+                let response = await fetch(ACCOUNTS_API_URL, {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({
