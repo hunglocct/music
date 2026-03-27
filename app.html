@@ -2,7 +2,7 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <link rel="icon" type="image/jpeg" href="logo.jpeg">
+    <link rel="icon" type="image/png" href="logo.png">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script>
         (function() {
@@ -44,7 +44,7 @@
         <!-- SIDEBAR -->
         <aside class="sidebar">
             <div class="logo" style="display:flex; align-items:center; gap:12px; padding:0 24px 18px; cursor:pointer;" onclick="window.toggleThemeMenu(event)">
-                <img src="./logo.jpeg" alt="H-MUSIC Logo" class="app-logo">
+                <img src="./logo.png" alt="H-MUSIC Logo" class="app-logo" onerror="this.src='meo.jpg'">
                 <p style="padding:0; margin:0; font-size:22px;">H-MUSIC</p>
             </div>
 
@@ -79,7 +79,7 @@
             <header class="topbar">
                 <div class="topbar-left">
                     <div class="mobile-logo" style="display:none; align-items:center; cursor:pointer;" onclick="window.toggleThemeMenu(event)">
-                        <img src="./logo.jpeg" class="app-logo" style="width:32px; height:32px; border-width:1px;">
+                        <img src="./logo.png" class="app-logo" style="width:32px; height:32px; border-width:1px;" onerror="this.src='meo.jpg'">
                     </div>
                     
                     <div class="category-tabs" style="margin-left: 20px;">
@@ -97,7 +97,7 @@
                     </div>
 
                     <button class="profile-btn" id="userProfileName" onclick="window.logout()">
-                        <img src="https://via.placeholder.com/28/ff4785/fff?text=..." alt="...">
+                        <img src="meo.jpg" alt="Avatar" onerror="this.src='meo.jpg'">
                         Đang rải thảm...
                     </button>
                 </div>
@@ -105,6 +105,16 @@
 
             <!-- NỘI DUNG CONTENT -->
             <div class="content">
+                <!-- RANKING SECTION -->
+                <div id="rankingSection" style="display:none;" class="ranking-container">
+                    <div class="section-header">
+                        <h2 style="font-size: 22px; margin-bottom: 20px; color: var(--text-primary);"><i class="fa-solid fa-ranking-star" style="color:var(--accent-pink); margin-right: 10px;"></i> Bảng Xếp Hạng Top 5</h2>
+                    </div>
+                    <div class="ranking-list" id="rankingList">
+                        <!-- Items rendered by JS -->
+                    </div>
+                </div>
+
                 <div class="section-header">
                     <h2 id="pageTitle">Gợi Ý Cho Bạn</h2>
                     <a href="#">Show all</a>
@@ -127,7 +137,7 @@
 
         <!-- Left: Thông tin bài hát -->
         <div class="np-left" style="cursor: pointer;" onclick="document.getElementById('fsPlayer').classList.add('active')" title="Phóng to">
-            <img id="npImage" src="https://via.placeholder.com/56/181818/181818" class="np-img" alt="Cover">
+            <img id="npImage" src="meo.jpg" class="np-img" alt="Cover" onerror="this.src='meo.jpg'">
             <div class="np-info">
                 <div class="np-title" id="npTitle">-----</div>
                 <div class="np-artist" id="npArtist">-----</div>
@@ -187,7 +197,7 @@
         <div class="app-container desktop-only">
             <div class="main-content">
                 <div class="album-display">
-                    <img id="fsImageDesk" src="https://via.placeholder.com/600" alt="Album Cover">
+                    <img id="fsImageDesk" src="meo.jpg" alt="Album Cover" onerror="this.src='meo.jpg'">
                     <h1 id="fsTitleDesk">-----</h1>
                     <p id="fsArtistDesk">-----</p>
                 </div>
@@ -195,6 +205,7 @@
                     <div class="tabs">
                         <span class="active" onclick="window.fsSwitchSideTabDesk('upnext', this)">TIẾP THEO</span>
                         <span onclick="window.fsSwitchSideTabDesk('lyrics', this)">LỜI BÀI HÁT</span>
+                        <span onclick="window.fsSwitchSideTabDesk('comments', this)">BÌNH LUẬN</span>
                     </div>
                     
                     <ul class="playlist" id="fsPlaylistDesk">
@@ -203,12 +214,22 @@
                     <div id="fsLyricsContainerDesk" style="display:none; flex:1; overflow-y:auto; padding-right:10px; text-align:center;">
                         <p id="fsLyricsDesk" style="font-size:18px; color:#cbd5e1; white-space:pre-wrap; line-height:2; display:flex; flex-direction:column; justify-content:center; min-height:100%;">Không có lời bài hát</p>
                     </div>
+
+                    <div id="fsCommentsContainerDesk" style="display:none; flex:1; overflow:hidden;" class="comments-panel">
+                        <div class="comment-input-area">
+                            <textarea id="commentInputDesk" placeholder="Chia sẻ cảm nghĩ của bạn về bài hát này..."></textarea>
+                            <button class="btn-post-comment" onclick="window.guiBinhLuan('desk')">Gửi</button>
+                        </div>
+                        <div id="commentListDesk" class="comment-list">
+                            <!-- Bình luận sẽ được render ở đây -->
+                        </div>
+                    </div>
                 </div>
             </div>
 
             <div class="bottom-bar">
                 <div class="now-playing-mini">
-                    <img id="fsMiniImageDesk" src="https://via.placeholder.com/100" alt="Thumb">
+                    <img id="fsMiniImageDesk" src="meo.jpg" alt="Thumb" onerror="this.src='meo.jpg'">
                     <div>
                         <h4 id="fsMiniTitleDesk">-----</h4>
                         <p id="fsMiniArtistDesk">-----</p>
@@ -247,10 +268,13 @@
             <div class="top-nav">
                 <i class="fa-solid fa-chevron-down" onclick="document.getElementById('fsPlayer').classList.remove('active')" title="Thu nhỏ"></i>
                 <span>Đang phát từ Danh sách</span>
-                <i class="fa-solid fa-ellipsis-vertical" title="Tuỳ chọn"></i>
+                <div style="display: flex; gap: 15px; align-items: center;">
+                    <i class="fa-regular fa-comment-dots" onclick="window.toggleCommentsMobile()" title="Bình luận" style="font-size: 22px;"></i>
+                    <i class="fa-solid fa-ellipsis-vertical" title="Tuỳ chọn"></i>
+                </div>
             </div>
 
-            <img id="fsImageMobile" src="https://via.placeholder.com/800" alt="Album Art" class="album-art">
+            <img id="fsImageMobile" src="meo.jpg" alt="Album Art" class="album-art" onerror="this.src='meo.jpg'">
 
             <div class="song-info">
                 <div class="song-texts">
@@ -297,6 +321,24 @@
                      <p id="fsLyricsMobile" style="font-size:22px; line-height:1.8; color:rgba(255,255,255,0.95); white-space:pre-wrap; font-weight:500;">Không có lời bài hát</p>
                  </div>
             </div>
+
+            <!-- Hidden Comments Overlay Mobile -->
+            <div id="fsCommentsOverlayMobile">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                    <h3 style="font-size:22px; font-weight:800; color:#fff; margin:0;">Bình luận</h3>
+                    <i class="fa-solid fa-xmark" onclick="window.toggleCommentsMobile()" style="font-size:28px; color:#fff; cursor:pointer; padding:5px;"></i>
+                </div>
+                
+                <div class="comment-input-area">
+                    <textarea id="commentInputMobile" placeholder="Viết bình luận công khai..."></textarea>
+                    <button class="btn-post-comment" onclick="window.guiBinhLuan('mobile')">Đăng</button>
+                    <div style="clear:both;"></div>
+                </div>
+
+                <div id="commentListMobile" class="comment-list">
+                    <!-- Bình luận sẽ được render ở đây -->
+                </div>
+            </div>
         </div>
 
 
@@ -305,6 +347,7 @@
     <!-- LOGIC CHẠY NHẠC VÀ MÀU SẮC -->
     
     <script src="js/theme.js"></script>
+    <script src="js/api.js"></script>
     <script src="js/app.js"></script>
     <script src="js/toast.js"></script>
 </body>

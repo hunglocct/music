@@ -1,5 +1,4 @@
 // --- XÁC THỰC NGƯỜI DÙNG ---
-        const ACCOUNTS_API = "https://69c56e348a5b6e2dec2c7690.mockapi.io/accous";
         async function checkAuth() {
             let savedUser = localStorage.getItem('currentUser');
             if(!savedUser) {
@@ -10,12 +9,12 @@
 
             // Bỏ qua check DB nếu là Admin
             if (window.isAdmin && window.isAdmin(userObj.acc, userObj.pass)) {
-                document.getElementById('userProfileName').innerHTML = `<img src="https://via.placeholder.com/28/ff4785/fff?text=AD" alt="Admin"> Quản trị viên <i class="fa-solid fa-right-from-bracket" style="padding: 0 4px;" title="Đăng Xuất"></i>`;
+                document.getElementById('userProfileName').innerHTML = `<img src="meo.jpg" alt="Admin" onerror="this.src='meo.jpg'"> Quản trị viên <i class="fa-solid fa-right-from-bracket" style="padding: 0 4px;" title="Đăng Xuất"></i>`;
                 return; 
             }
 
             // Gán hiển thị Profile 
-            document.getElementById('userProfileName').innerHTML = `<img src="${userObj.avatar}" alt="Avatar"> ${userObj.acc} <i class="fa-solid fa-right-from-bracket" style="padding: 0 4px;" title="Đăng Xuất"></i>`;
+            document.getElementById('userProfileName').innerHTML = `<img src="${userObj.avatar}" alt="Avatar" onerror="this.src='meo.jpg'"> ${userObj.acc} <i class="fa-solid fa-right-from-bracket" style="padding: 0 4px;" title="Đăng Xuất"></i>`;
             
             // Background check với DB để đề phòng localStorage bị sửa giả mạo
             try {
@@ -39,7 +38,6 @@
             }
         }
 
-        const API_URL = "https://69c56e348a5b6e2dec2c7690.mockapi.io/songs";
         let danhSachGoc = []; 
         let currentSongIndex = -1;
         let isPlaying = false;
@@ -56,16 +54,78 @@
         // [TẢI DỮ LIỆU TỪ MOCKAPI]
         window.loadMusic = async () => {
             try {
-                let response = await fetch(API_URL);
-                danhSachGoc = await response.json();
+                let [songRes, accRes] = await Promise.all([
+                    fetch(API_URL),
+                    fetch(ACCOUNTS_API)
+                ]);
                 
-                // Sắp xếp bài list ra thẻ content theo view cao nhất
+                danhSachGoc = await songRes.json();
+                let allUsers = await accRes.json();
+                
+                // Đếm like cho từng bài hát từ tất cả user
+                let likeCounts = {};
+                allUsers.forEach(u => {
+                    if(u.like && Array.isArray(u.like)) {
+                        u.like.forEach(sid => {
+                            likeCounts[sid] = (likeCounts[sid] || 0) + 1;
+                        });
+                    }
+                });
+
+                // Tính điểm: Nghe * 1 + Thích * 3
+                danhSachGoc.forEach(s => {
+                    s.totalLikes = likeCounts[s.id] || 0;
+                    s.rankingScore = (Number(s.listens) || 0) + (s.totalLikes * 3);
+                });
+
+                // Sắp xếp bài list ra thẻ content theo view cao nhất (giữ logic cũ cho grid chính)
                 danhSachGoc.sort((a, b) => (Number(b.listens) || 0) - (Number(a.listens) || 0));
                 
                 window.renderNhac(danhSachGoc); 
+                window.renderRanking(danhSachGoc);
             } catch (error) {
                 document.getElementById('songGrid').innerHTML = `<h3 style="color:var(--accent-pink);">Lỗi tải nhạc: ${error}</h3>`;
             }
+        }
+
+        window.renderRanking = (songs) => {
+            const rankingList = document.getElementById('rankingList');
+            const rankingSection = document.getElementById('rankingSection');
+            if(!rankingList || !rankingSection) return;
+
+            // Lấy top 5 dựa trên rankingScore
+            const top5 = [...songs].sort((a,b) => b.rankingScore - a.rankingScore).slice(0, 5);
+            
+            if(top5.length > 0) rankingSection.style.display = 'block';
+
+            let html = '';
+            top5.forEach((s, i) => {
+                let rank = i + 1;
+                let rankIcon = rank <= 3 ? `<i class="fa-solid fa-trophy"></i>` : rank;
+                let isNonstop = (s.classify || s.category || "").toLowerCase().includes('nonstop');
+                let badgeTxt = isNonstop ? 'NONSTOP' : 'TRACK';
+
+                html += `
+                <div class="ranking-item rank-${rank}" onclick="window.playSong(${danhSachGoc.findIndex(x => x.id === s.id)})" style="cursor:pointer;">
+                    <div class="rank-number">${rankIcon}</div>
+                    <img src="${s.aveta || 'meo.jpg'}" onerror="this.src='meo.jpg'">
+                    <div class="rank-info">
+                        <div class="rank-name">${s.name}</div>
+                        <div class="rank-artist">${s.artist}</div>
+                    </div>
+                    <div class="rank-meta">
+                        <span class="rank-badge">${badgeTxt}</span>
+                    </div>
+                    <div class="rank-stats">
+                        <div class="stat-points">${s.rankingScore} pts</div>
+                        <div style="display:flex; gap:10px;">
+                            <span class="stat-item"><i class="fa-solid fa-play"></i>${s.listens}</span>
+                            <span class="stat-item"><i class="fa-solid fa-heart"></i>${s.totalLikes}</span>
+                        </div>
+                    </div>
+                </div>`;
+            });
+            rankingList.innerHTML = html;
         }
 
         // --- LOGIC GIAO DIỆN & TÌM KIẾM ---
@@ -87,6 +147,9 @@
         window.hienThiTrangChu = () => {
             hienThiCheDo = 'trangchu';
             setActiveNav('nav-home');
+            const rankingSection = document.getElementById('rankingSection');
+            if(rankingSection) rankingSection.style.display = 'block';
+
             window.currentTabType = 'playlists';
             document.querySelectorAll('.tab-btn').forEach(b => {
                 b.classList.remove('active');
@@ -100,6 +163,9 @@
         window.hienThiTimKiem = () => {
             hienThiCheDo = 'search';
             setActiveNav('nav-search');
+            const rankingSection = document.getElementById('rankingSection');
+            if(rankingSection) rankingSection.style.display = 'none';
+
             let title = document.getElementById('pageTitle');
             if(title) title.innerText = 'Khám phá âm nhạc';
             
@@ -117,6 +183,9 @@
             if(!userStr) { showToast("Vui lòng đăng nhập để xem Nhạc Yêu Thích!", "info"); return; }
             hienThiCheDo = 'yeuthich';
             setActiveNav('nav-fav');
+            const rankingSection = document.getElementById('rankingSection');
+            if(rankingSection) rankingSection.style.display = 'none';
+
             let title = document.getElementById('pageTitle');
             if(title) title.innerText = 'Nhạc Yêu Thích Của Bạn';
             window.timKiem();
@@ -127,6 +196,9 @@
             if(!userStr) { showToast("Vui lòng đăng nhập!", "info"); return; }
             hienThiCheDo = 'myplaylist';
             setActiveNav('nav-playlist');
+            const rankingSection = document.getElementById('rankingSection');
+            if(rankingSection) rankingSection.style.display = 'none';
+
             let title = document.getElementById('pageTitle');
             if(title) title.innerText = 'Danh Sách Phát Của Tôi';
             window.renderMyPlaylist();
@@ -137,6 +209,9 @@
             if(!userStr) { showToast("Vui lòng đăng nhập!", "info"); return; }
             hienThiCheDo = 'history';
             setActiveNav('nav-history');
+            const rankingSection = document.getElementById('rankingSection');
+            if(rankingSection) rankingSection.style.display = 'none';
+
             let title = document.getElementById('pageTitle');
             if(title) title.innerText = 'Lịch Sử Nghe Gần Đây';
             window.timKiem();
@@ -149,6 +224,9 @@
             
             hienThiCheDo = 'library';
             setActiveNav('nav-library');
+            const rankingSection = document.getElementById('rankingSection');
+            if(rankingSection) rankingSection.style.display = 'none';
+
             let title = document.getElementById('pageTitle');
             if(title) title.innerText = 'Thư Viện Của Bạn';
             
@@ -162,7 +240,7 @@
             let buildGridItem = (song, idxInGlobal) => `
                 <div class="card" onclick="window.playSong(${idxInGlobal})" style="flex: 0 0 160px; margin-right: 15px;">
                     <div class="card-img-wrapper" style="position:relative;">
-                        <img src="${song.aveta || 'https://via.placeholder.com/300/ff4785/fff?text=Pink'}" alt="cover">
+                        <img src="${song.aveta || 'meo.jpg'}" alt="cover" onerror="this.src='meo.jpg'">
                         <button class="play-btn-card"><i class="fa-solid fa-play"></i></button>
                     </div>
                     <div style="margin-top:12px; overflow:hidden;">
@@ -198,7 +276,7 @@
                 <div class="playlist-row" draggable="true" ondragstart="window.dragStart(event, ${index})" ondragover="window.dragOver(event)" ondrop="window.drop(event, ${index})" 
                      style="display: flex; align-items: center; padding: 10px; background: rgba(255,255,255,0.05); border-radius: 8px; cursor: grab; margin-bottom: 10px;">
                     <i class="fa-solid fa-grip-lines" style="margin-right: 15px; color: var(--text-secondary);"></i>
-                    <img src="${song.aveta}" style="width: 40px; height: 40px; border-radius: 5px; margin-right: 15px;">
+                    <img src="${song.aveta || 'meo.jpg'}" style="width: 40px; height: 40px; border-radius: 5px; margin-right: 15px;" onerror="this.src='meo.jpg'">
                     <div style="flex: 1; overflow:hidden;" onclick="window.playCustomPlaylistSong(${index})">
                         <div style="font-weight: bold; white-space:nowrap; text-overflow:ellipsis; overflow:hidden;">${song.name}</div>
                         <div style="font-size: 12px; color: var(--text-secondary);">${song.artist}</div>
@@ -379,7 +457,7 @@
                 <div class="playlist-row" draggable="true" ondragstart="window.dragStart(event, ${index})" ondragover="window.dragOver(event)" ondrop="window.drop(event, ${index})" 
                      style="display: flex; align-items: center; padding: 10px; background: rgba(255,255,255,0.05); border-radius: 8px; cursor: grab;">
                     <i class="fa-solid fa-grip-lines" style="margin-right: 15px; color: var(--text-secondary);"></i>
-                    <img src="${song.aveta}" style="width: 40px; height: 40px; border-radius: 5px; margin-right: 15px;">
+                    <img src="${song.aveta || 'meo.jpg'}" style="width: 40px; height: 40px; border-radius: 5px; margin-right: 15px;" onerror="this.src='meo.jpg'">
                     <div style="flex: 1; overflow:hidden;" onclick="window.playCustomPlaylistSong(${index})">
                         <div style="font-weight: bold; white-space:nowrap; text-overflow:ellipsis; overflow:hidden;">${song.name}</div>
                         <div style="font-size: 12px; color: var(--text-secondary);">${song.artist}</div>
@@ -456,7 +534,7 @@
                 html += `
                 <div class="card" onclick="window.playSong(${realIndex})">
                     <div class="card-img-wrapper" style="position:relative;">
-                        <img src="${item.aveta || 'https://via.placeholder.com/300/ff4785/fff?text=Pink'}" alt="cover">
+                        <img src="${item.aveta || 'meo.jpg'}" alt="cover" onerror="this.src='meo.jpg'">
                         <button class="play-btn-card"><i class="fa-solid fa-play"></i></button>
                     </div>
                     <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-top:12px;">
@@ -561,10 +639,16 @@
         }
 
         window.syncDesktopFS = (song) => {
-            let dImg = document.getElementById('fsImageDesk'); if(dImg) dImg.src = song.aveta || '';
+            const fsImgDesk = document.getElementById('fsImageDesk');
+            if (fsImgDesk) { fsImgDesk.src = song.aveta || 'meo.jpg'; fsImgDesk.onerror = () => fsImgDesk.src = 'meo.jpg'; }
             let dTitle = document.getElementById('fsTitleDesk'); if(dTitle) dTitle.innerText = song.name;
             let dArt = document.getElementById('fsArtistDesk'); if(dArt) dArt.innerText = song.artist;
-            let dImgMini = document.getElementById('fsMiniImageDesk'); if(dImgMini) dImgMini.src = song.aveta || '';
+            
+            const fsMiniImgDesk = document.getElementById('fsMiniImageDesk');
+            if (fsMiniImgDesk) { fsMiniImgDesk.src = song.aveta || 'meo.jpg'; fsMiniImgDesk.onerror = () => fsMiniImgDesk.src = 'meo.jpg'; }
+            // Note: In case we have a typo in code above, let's make it robust
+            let dImgMini = document.getElementById('fsMiniImageDesk'); if(dImgMini) { dImgMini.src = song.aveta || 'meo.jpg'; dImgMini.onerror = () => dImgMini.src = 'meo.jpg'; }
+            
             let dTitleMini = document.getElementById('fsMiniTitleDesk'); if(dTitleMini) dTitleMini.innerText = song.name;
             let dArtMini = document.getElementById('fsMiniArtistDesk'); if(dArtMini) dArtMini.innerText = song.artist;
             let deskLike = document.getElementById('fsLikeIconDesk');
@@ -593,7 +677,7 @@
                 let onClick = currentQueueType === 'custom' ? `event.stopPropagation(); window.playCustomPlaylistSong(${i})` : `event.stopPropagation(); window.playSong(${danhSachGoc.findIndex(x=>x.id===s.id)})`;
                 html += `
                     <li class="${playingClass}" onclick="${onClick}">
-                        <img src="${s.aveta || 'https://via.placeholder.com/50'}" alt="Thumb">
+                        <img src="${s.aveta || 'meo.jpg'}" alt="Thumb" onerror="this.src='meo.jpg'">
                         <div class="song-info">
                             <h4 style="${titleColor}">${s.name}</h4>
                             <p>${s.artist}</p>
@@ -629,29 +713,46 @@
         window.fsSwitchSideTabDesk = (tab, el) => {
              let p = document.getElementById('fsPlaylistDesk');
              let l = document.getElementById('fsLyricsContainerDesk');
-             if(!p || !l) return;
+             let c = document.getElementById('fsCommentsContainerDesk');
+             if(!p || !l || !c) return;
              let tabs = el.parentElement.querySelectorAll('span');
              tabs.forEach(t => t.classList.remove('active'));
              el.classList.add('active');
-             if(tab === 'lyrics') { p.style.display = 'none'; l.style.display = 'flex'; }
-             else { p.style.display = 'block'; l.style.display = 'none'; }
+             
+             p.style.display = (tab === 'upnext' ? 'block' : 'none');
+             l.style.display = (tab === 'lyrics' ? 'flex' : 'none');
+             c.style.display = (tab === 'comments' ? 'flex' : 'none');
+             
+             if(tab === 'comments') window.renderBinhLuan();
         }
 
         // [CHƠI NHẠC]
+        window.playCustomPlaylistSong = (index) => {
+            currentQueueType = 'custom';
+            if (index < 0 || index >= customPlaylistQueue.length) return;
+            currentSongIndex = index;
+            let song = customPlaylistQueue[index];
+            window.playActual(song);
+        };
+
         window.playSong = (index) => {
             currentQueueType = 'goc';
             if (index < 0 || index >= danhSachGoc.length) return;
             currentSongIndex = index;
             let song = danhSachGoc[index];
+            window.playActual(song);
+        };
 
+        window.playActual = (song) => {
             // Cập nhật UI Bottom Player
-            document.getElementById('npImage').src = song.aveta || 'https://via.placeholder.com/56/181818/181818';
-            document.getElementById('npTitle').innerText = song.name;
-            document.getElementById('npArtist').innerText = song.artist;
+            const npImg = document.getElementById('npImage');
+            if (npImg) { npImg.src = song.aveta || 'meo.jpg'; npImg.onerror = () => npImg.src = 'meo.jpg'; }
+            let npT = document.getElementById('npTitle'); if(npT) npT.innerText = song.name;
+            let npA = document.getElementById('npArtist'); if(npA) npA.innerText = song.artist;
 
             // Update UI Fullscreen Player (Old/Shared)
             let fsImg = document.getElementById('fsImage');
-            if (fsImg) fsImg.src = song.aveta || 'https://via.placeholder.com/380/181818/181818';
+            if (fsImg) { fsImg.src = song.aveta || 'meo.jpg'; fsImg.onerror = () => fsImg.src = 'meo.jpg'; }
             let fsT = document.getElementById('fsTitle');
             if (fsT) fsT.innerText = song.name;
             let fsA = document.getElementById('fsArtist');
@@ -660,7 +761,8 @@
             // NEW MOBILE UI SYNC
             let fsImgMob = document.getElementById('fsImageMobile');
             if (fsImgMob) {
-                fsImgMob.src = song.aveta || 'https://via.placeholder.com/800';
+                fsImgMob.src = song.aveta || 'meo.jpg';
+                fsImgMob.onerror = () => fsImgMob.src = 'meo.jpg';
                 
                 // Kích hoạt Animation chuyển bài
                 let animClass = (lastSkipDirection === 'next') ? 'animate-next' : 'animate-prev';
@@ -697,7 +799,6 @@
             }
 
             // Xóa tự động bung Fullscreen, chỉ bung thanh điều khiển dưới
-            // document.getElementById('fsPlayer').classList.add('active');
             let bottomBar = document.querySelector('.now-playing-bar');
             if(bottomBar) bottomBar.classList.add('active');
 
@@ -706,94 +807,16 @@
             audio.play();
             isPlaying = true;
             let playIconHtml = '<i class="fa-solid fa-pause"></i>';
-            if(btnPlayPause) btnPlayPause.innerHTML = playIconHtml;
-            let fsBtn = document.getElementById('fsBtnPlayPause');
-            if(fsBtn) fsBtn.innerHTML = playIconHtml;
-            let mBtn = document.getElementById('fsBtnPlayPauseMobile');
-            if(mBtn) mBtn.innerHTML = playIconHtml;
-            let dBtn = document.getElementById('fsBtnPlayPauseDesk');
-            if(dBtn) dBtn.innerHTML = playIconHtml;
+            ['btnPlayPause', 'fsBtnPlayPause', 'fsBtnPlayPauseMobile', 'fsBtnPlayPauseDesk'].forEach(id => {
+                let el = document.getElementById(id);
+                if(el) el.innerHTML = playIconHtml;
+            });
 
-            // Gọi đếm lượt nghe
+            // Gọi đếm lượt nghe và ghi sử
             window.tangLuotNghe(song.id);
             window.recordHistory(song.id);
-        }
+        };
 
-        window.playCustomPlaylistSong = (indexInCustom) => {
-            currentQueueType = 'custom';
-            if (indexInCustom < 0 || indexInCustom >= customPlaylistQueue.length) return;
-            currentSongIndex = indexInCustom;
-            let song = customPlaylistQueue[indexInCustom];
-            
-            document.getElementById('npImage').src = song.aveta || 'https://via.placeholder.com/56/181818/181818';
-            document.getElementById('npTitle').innerText = song.name;
-            document.getElementById('npArtist').innerText = song.artist;
-
-            // Cập nhật UI Fullscreen Player (Old/Shared)
-            let fsImg2 = document.getElementById('fsImage');
-            if (fsImg2) fsImg2.src = song.aveta || 'https://via.placeholder.com/380/181818/181818';
-            let fsT2 = document.getElementById('fsTitle');
-            if (fsT2) fsT2.innerText = song.name;
-            let fsA2 = document.getElementById('fsArtist');
-            if (fsA2) fsA2.innerText = song.artist;
-
-            // NEW MOBILE UI SYNC
-            let fsImgMob2 = document.getElementById('fsImageMobile');
-            if (fsImgMob2) {
-                fsImgMob2.src = song.aveta || 'https://via.placeholder.com/800';
-                
-                // Kích hoạt Animation chuyển bài
-                let animClass2 = (lastSkipDirection === 'next') ? 'animate-next' : 'animate-prev';
-                fsImgMob2.classList.remove('animate-next', 'animate-prev');
-                void fsImgMob2.offsetWidth; // Trigger reflow
-                fsImgMob2.classList.add(animClass2);
-            }
-            let fsTMob2 = document.getElementById('fsTitleMobile');
-            if (fsTMob2) fsTMob2.innerText = song.name;
-            let fsAMob2 = document.getElementById('fsArtistMobile');
-            if (fsAMob2) fsAMob2.innerText = song.artist;
-
-            // Cập nhật nền mờ
-            let bgEl2 = document.getElementById('fsBgBlur');
-            if (bgEl2) bgEl2.style.backgroundImage = `url('${song.aveta || ''}')` ;
-
-            if(window.syncDesktopFS) window.syncDesktopFS(song);
-
-            let countEl2 = document.getElementById('fsListenCount');
-            if (countEl2) countEl2.innerText = song.listens || 0;
-            
-            let lyricsEl2 = document.getElementById('fsLyrics');
-            let lyricsMobile2 = document.getElementById('fsLyricsMobile');
-            let lyricsText2 = (song.lyrics && song.lyrics.trim() !== '') ? song.lyrics : 'Không có lời bài hát';
-            if (lyricsEl2) {
-                lyricsEl2.innerText = lyricsText2;
-                song.lyrics ? lyricsEl2.classList.add('has-lyrics') : lyricsEl2.classList.remove('has-lyrics');
-                let lyricsBox2 = document.getElementById('fsLyricsContainer');
-                if(lyricsBox2) lyricsBox2.scrollTop = 0;
-            }
-            if (lyricsMobile2) {
-                lyricsMobile2.innerText = lyricsText2;
-            }
-
-            // Xóa tự động bung Fullscreen
-            // document.getElementById('fsPlayer').classList.add('active');
-            let bottomBar = document.querySelector('.now-playing-bar');
-            if(bottomBar) bottomBar.classList.add('active');
-            
-            audio.src = song.link;
-            audio.play();
-            isPlaying = true;
-            let playIconHtml2 = '<i class="fa-solid fa-pause"></i>';
-            if(btnPlayPause) btnPlayPause.innerHTML = playIconHtml2;
-            let fsBtn2 = document.getElementById('fsBtnPlayPause');
-            if(fsBtn2) fsBtn2.innerHTML = playIconHtml2;
-            let mBtn2 = document.getElementById('fsBtnPlayPauseMobile');
-            if(mBtn2) mBtn2.innerHTML = playIconHtml2;
-            let dBtn2 = document.getElementById('fsBtnPlayPauseDesk');
-            if(dBtn2) dBtn2.innerHTML = playIconHtml2;
-            window.tangLuotNghe(song.id);
-            window.recordHistory(song.id);
-        }
 
         window.togglePlay = () => {
             if (audio.src === "" || audio.src === window.location.href) {
@@ -949,10 +972,6 @@
 
         // Khởi động
         window.loadMusic();
-    
-
-
-
 
 // ===== FULLSCREEN PLAYER MOBILE HELPERS & GESTURES =====
 window.initSwipeGestures = () => {
@@ -982,11 +1001,6 @@ window.initSwipeGestures = () => {
         // Swipe Down (threshold 100px) -> Close
         if (deltaY > 100 && Math.abs(deltaY) > Math.abs(deltaX) * 1.5) {
             fsPlayer.classList.remove('active');
-        }
-        
-        // Swipe Up (threshold 80px) -> Show Lyrics
-        if (deltaY < -80 && Math.abs(deltaY) > Math.abs(deltaX) * 1.5) {
-            window.toggleLyricsMobile();
         }
     }, {passive: true});
 
@@ -1020,11 +1034,7 @@ window.initSwipeGestures();
 window.toggleLyricsMobile = () => {
     let overlay = document.getElementById('fsLyricsOverlayMobile');
     if(overlay) {
-        if(overlay.style.display === 'none') {
-            overlay.style.display = 'flex';
-        } else {
-            overlay.style.display = 'none';
-        }
+        overlay.style.display = (overlay.style.display === 'none' ? 'flex' : 'none');
     }
 }
 
@@ -1047,6 +1057,163 @@ window.toggleLikeMobile = () => {
             icon.classList.remove('fa-solid', 'liked');
             icon.classList.add('fa-regular');
         }
+    }
+}
+
+// === COMMENT SYSTEM LOGIC ===
+window.toggleCommentsMobile = () => {
+    let overlay = document.getElementById('fsCommentsOverlayMobile');
+    if(overlay) {
+        let isOpening = overlay.style.display === 'none';
+        overlay.style.display = isOpening ? 'flex' : 'none';
+        if(isOpening) window.renderBinhLuan();
+    }
+}
+
+window.renderBinhLuan = async () => {
+    let song = danhSachGoc[currentSongIndex];
+    if(!song) return;
+    
+    // UI Containers
+    let listDesk = document.getElementById('commentListDesk');
+    let listMob = document.getElementById('commentListMobile');
+    if(!listDesk && !listMob) return;
+
+    // Fetch account list to check for existence
+    let allUsers = [];
+    try {
+        let res = await fetch(ACCOUNTS_API);
+        allUsers = await res.json();
+    } catch(e) {}
+
+    let currentUser = JSON.parse(localStorage.getItem('currentUser'));
+    let isAdmin = currentUser && window.isAdmin && window.isAdmin(currentUser.acc, currentUser.pass);
+
+    // Parse comments
+    let cms = [];
+    try {
+        cms = Array.isArray(song.comment_ext) ? song.comment_ext : (song.comment_ext ? JSON.parse(song.comment_ext) : []);
+    } catch(e) { cms = []; }
+
+    let html = cms.length === 0 ? `<div style="text-align:center; color:var(--text-secondary); padding:20px; font-size:13px;">Chưa có bình luận nào. Hãy là người đầu tiên! 🎤</div>` : "";
+    
+    // Sort by time descending
+    [...cms].sort((a,b) => new Date(b.time) - new Date(a.time)).forEach(c => {
+        let user = allUsers.find(u => u.id === c.uid || u.acc === c.uid);
+        let userName = user ? (user.acc || user.user || "Người dùng ẩn danh") : "Tài khoản không tồn tại";
+        let userAva = user ? (user.avatar || user.aveta || "meo.jpg") : "meo.jpg";
+        let timeStr = new Date(c.time).toLocaleString('vi-VN', {hour:'2-digit', minute:'2-digit', day:'2-digit', month:'2-digit'});
+
+        let adminControls = isAdmin ? `
+            <div class="comment-admin-controls">
+                <button onclick="window.suaBinhLuan('${c.id}')" title="Sửa"><i class="fa-solid fa-pen-to-square"></i></button>
+                <button onclick="window.xoaBinhLuan('${c.id}')" title="Xóa" style="color:#ff4d4d;"><i class="fa-solid fa-trash"></i></button>
+            </div>
+        ` : "";
+
+        html += `
+        <div class="comment-item">
+            <img src="${userAva}" class="comment-avatar" onerror="this.src='meo.jpg'">
+            <div class="comment-content">
+                <div class="comment-info">
+                    <div>
+                        <span class="comment-user">${userName}</span>
+                        <span class="comment-time">${timeStr}</span>
+                    </div>
+                    ${adminControls}
+                </div>
+                <div class="comment-text">${c.text}</div>
+            </div>
+        </div>`;
+    });
+
+    if(listDesk) listDesk.innerHTML = html;
+    if(listMob) listMob.innerHTML = html;
+}
+
+window.guiBinhLuan = async (type) => {
+    let input = document.getElementById(type === 'desk' ? 'commentInputDesk' : 'commentInputMobile');
+    if(!input || !input.value.trim()) return;
+
+    let user = JSON.parse(localStorage.getItem('currentUser'));
+    if(!user) {
+        showToast("Bạn cần đăng nhập để bình luận bài hát nhé! 😊", "info");
+        return;
+    }
+
+    let song = danhSachGoc[currentSongIndex];
+    let cms = [];
+    try {
+        cms = Array.isArray(song.comment_ext) ? song.comment_ext : (song.comment_ext ? JSON.parse(song.comment_ext) : []);
+    } catch(e) { cms = []; }
+
+    let newComment = {
+        id: Date.now().toString(),
+        uid: user.id || user.acc,
+        text: input.value.trim(),
+        time: new Date().toISOString()
+    };
+
+    cms.push(newComment);
+    input.value = "";
+    
+    try {
+        await fetch(`${API_URL}/${song.id}`, {
+            method: 'PUT',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ comment_ext: cms })
+        });
+        song.comment_ext = cms;
+        window.renderBinhLuan();
+        showToast("Đã đăng bình luận! ✨", "success");
+    } catch(e) {
+        showToast("Lỗi khi gửi bình luận. Thử lại nhé!", "error");
+    }
+}
+
+window.xoaBinhLuan = async (cid) => {
+    if(!confirm("Bạn có chắc chắn muốn xóa bình luận này không?")) return;
+    let song = danhSachGoc[currentSongIndex];
+    let cms = Array.isArray(song.comment_ext) ? song.comment_ext : (song.comment_ext ? JSON.parse(song.comment_ext) : []);
+    cms = cms.filter(c => c.id !== cid);
+
+    try {
+        await fetch(`${API_URL}/${song.id}`, {
+            method: 'PUT',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ comment_ext: cms })
+        });
+        song.comment_ext = cms;
+        window.renderBinhLuan();
+        showToast("Đã xóa bình luận! 🗑️", "success");
+    } catch(e) {
+        showToast("Lỗi khi xóa bình luận.", "error");
+    }
+}
+
+window.suaBinhLuan = async (cid) => {
+    let song = danhSachGoc[currentSongIndex];
+    let cms = Array.isArray(song.comment_ext) ? song.comment_ext : (song.comment_ext ? JSON.parse(song.comment_ext) : []);
+    let cIndex = cms.findIndex(c => c.id === cid);
+    if(cIndex === -1) return;
+
+    let oldText = cms[cIndex].text;
+    let newText = prompt("Chỉnh sửa bình luận:", oldText);
+    if(newText === null || newText.trim() === "" || newText === oldText) return;
+
+    cms[cIndex].text = newText.trim();
+
+    try {
+        await fetch(`${API_URL}/${song.id}`, {
+            method: 'PUT',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ comment_ext: cms })
+        });
+        song.comment_ext = cms;
+        window.renderBinhLuan();
+        showToast("Đã cập nhật bình luận! 📝", "success");
+    } catch(e) {
+        showToast("Lỗi khi cập nhật bình luận.", "error");
     }
 }
 

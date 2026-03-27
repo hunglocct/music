@@ -2,7 +2,7 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <link rel="icon" type="image/jpeg" href="logo.jpeg">
+    <link rel="icon" type="image/png" href="logo.png">
     <script>
         (function() {
             const t = localStorage.getItem('hmusic-theme') || 'dark';
@@ -40,7 +40,7 @@
     </div>
     <aside class="sidebar">
         <a class="sidebar-brand" style="text-decoration:none; gap: 15px; font-size: 16px; cursor:pointer; height: auto; padding: 15px 10px; justify-content: flex-start;" onclick="window.toggleThemeMenu(event)">
-            <img src="./logo.jpeg" alt="Admin Logo" class="app-logo" style="width: 45px; height: 45px;">
+            <img src="./logo.png" alt="Admin Logo" class="app-logo" style="width: 45px; height: 45px;">
             <div style="display: flex; flex-direction: column; align-items: flex-start; gap: 2px;">
                 <span style="font-weight: 800; font-size: 18px; color: var(--accent-pink);">HUNG</span>
                 <span id="adminGreeting" style="font-size: 11px; font-weight: 500; color: var(--text-secondary); white-space: nowrap;">Chào buổi...</span>
@@ -59,7 +59,7 @@
         <header class="header">
             <div style="display:flex; align-items:center; gap: 15px;">
                 <div class="mobile-logo-admin" style="display:none; align-items:center; cursor:pointer;" onclick="window.toggleThemeMenu(event)">
-                    <img src="./logo.jpeg" class="app-logo" style="width:32px; height:32px; border-width:1px;">
+                    <img src="./logo.png" class="app-logo" style="width:32px; height:32px; border-width:1px;">
                 </div>
                 <div class="breadcrumb" id="top-breadcrumb">Admin / Tổng quan</div>
             </div>
@@ -166,6 +166,7 @@
     </div>
 
     <!-- MAIN SPA JS ENGINE -->
+    <script src="js/api.js"></script>
     <script src="js/admin_app.js"></script>
     <script src="js/theme.js"></script>
     <script src="js/toast.js"></script>

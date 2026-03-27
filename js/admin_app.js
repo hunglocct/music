@@ -1,5 +1,3 @@
-const SONGS_API = "https://69c56e348a5b6e2dec2c7690.mockapi.io/songs";
-const ACC_API = "https://69c56e348a5b6e2dec2c7690.mockapi.io/accous";
 
 let baiHat = [];
 let accounts = [];

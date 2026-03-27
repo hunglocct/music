@@ -14,6 +14,7 @@
   --radius-sm: 8px;
   --radius-md: 16px;
   --radius-pill: 50px;
+  --bg-player-glass: rgba(15, 23, 42, 0.25);
 }
 
 /* CHẾ ĐỘ SÁNG (LIGHT MODE) CHỈ ĐỔI NỀN / CHỮ */
@@ -25,6 +26,7 @@
   --text-primary: #0f172a;
   --text-secondary: #64748b;
   --border-subdued: #cbd5e1;
+  --bg-player-glass: rgba(255, 255, 255, 0.6);
 }
 
 .dark-mode {
@@ -35,6 +37,7 @@
   --text-primary: #ffffff;
   --text-secondary: #b3b3b3;
   --border-subdued: #282828;
+  --bg-player-glass: rgba(15, 23, 42, 0.2);
 }
 
 /* PALETTE MÀU SẮC CHỈ ĐỔI MÀU NHẤN CHÍNH (ACCENT) */

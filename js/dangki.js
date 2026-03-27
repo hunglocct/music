@@ -2,7 +2,6 @@
 
         // --- XỬ LÝ ĐĂNG KÝ VỚI MOCKAPI ---
         // (Tên resource trên MockApi tuỳ theo ảnh là "accous")
-        const API_URL = "https://69c56e348a5b6e2dec2c7690.mockapi.io/accous";
         
         document.getElementById('registerForm').addEventListener('submit', async (e) => {
             e.preventDefault(); // Ngăn trang tự tải lại

@@ -1,7 +1,6 @@
 
 
         // --- XỬ LÝ ĐĂNG NHẬP ---
-        const ACCOUNTS_API_URL = "https://69c56e348a5b6e2dec2c7690.mockapi.io/accous";
 
         // 1. Tự động chuyển thẳng vào web nếu đã có tk hợp lệ ở LocalStorage
         window.onload = async () => {

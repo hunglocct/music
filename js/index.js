@@ -1,20 +1,22 @@
 // --- XÁC THỰC NGƯỜI DÙNG (CHẾ ĐỘ KHÁCH) ---
-const ACCOUNTS_API = "https://69c56e348a5b6e2dec2c7690.mockapi.io/accous";
 window.isGuest = true;
 
 async function checkAuth() {
     let savedUser = localStorage.getItem('currentUser');
-    if(savedUser) {
-        window.location.href = "app.html";
-        return;
-    }
-    // Ở index.html (Khách), ta không redirect mà chỉ hiện UI khách
     let profileBtn = document.getElementById('userProfileName');
-    if(profileBtn) {
+    if(!profileBtn) return;
+
+    if(savedUser) {
+        let userObj = JSON.parse(savedUser);
+        // Hiển thị Profile thay vì redirect ngay lập tức (theo yêu cầu hiện tên/ava trên index)
+        profileBtn.innerHTML = `<img src="${userObj.avatar || userObj.aveta || 'meo.jpg'}" alt="Avatar" onerror="this.src='meo.jpg'"> ${userObj.acc} <i class="fa-solid fa-right-from-bracket" style="padding: 0 4px;" title="Chuyển sang App"></i>`;
+        profileBtn.onclick = () => window.location.href = "app.html"; 
+    } else {
         profileBtn.innerHTML = `
-            <img src="https://via.placeholder.com/28/ff4785/fff?text=?" alt="Guest">
+            <img src="meo.jpg" alt="Guest" onerror="this.src='meo.jpg'">
             Đăng Nhập / Đăng Ký
         `;
+        profileBtn.onclick = () => window.openAuthModal();
     }
 }
 checkAuth();
@@ -29,7 +31,6 @@ window.closeAuthModal = () => {
     if(modal) modal.style.display = 'none';
 };
 
-const API_URL = "https://69c56e348a5b6e2dec2c7690.mockapi.io/songs";
 let danhSachGoc = []; 
 let currentSongIndex = -1;
 let isPlaying = false;
@@ -45,13 +46,76 @@ const timeTotal = document.getElementById('timeTotal');
 
 window.loadMusic = async () => {
     try {
-        let response = await fetch(API_URL);
-        danhSachGoc = await response.json();
+        let [songRes, accRes] = await Promise.all([
+            fetch(API_URL),
+            fetch(ACCOUNTS_API)
+        ]);
+        
+        danhSachGoc = await songRes.json();
+        let allUsers = await accRes.json();
+        
+        // Đếm like cho từng bài hát từ tất cả user
+        let likeCounts = {};
+        allUsers.forEach(u => {
+            if(u.like && Array.isArray(u.like)) {
+                u.like.forEach(sid => {
+                    likeCounts[sid] = (likeCounts[sid] || 0) + 1;
+                });
+            }
+        });
+
+        // Tính điểm: Nghe * 1 + Thích * 3
+        danhSachGoc.forEach(s => {
+            s.totalLikes = likeCounts[s.id] || 0;
+            s.rankingScore = (Number(s.listens) || 0) + (s.totalLikes * 3);
+        });
+
         danhSachGoc.sort((a, b) => (Number(b.listens) || 0) - (Number(a.listens) || 0));
         window.renderNhac(danhSachGoc); 
+        window.renderRanking(danhSachGoc);
     } catch (error) {
         document.getElementById('songGrid').innerHTML = `<h3 style="color:var(--accent-pink);">Lỗi tải nhạc: ${error}</h3>`;
     }
+}
+
+window.renderRanking = (songs) => {
+    const rankingList = document.getElementById('rankingList');
+    const rankingSection = document.getElementById('rankingSection');
+    if(!rankingList || !rankingSection) return;
+
+    // Lấy top 5 dựa trên rankingScore
+    const top5 = [...songs].sort((a,b) => b.rankingScore - a.rankingScore).slice(0, 5);
+    
+    if(top5.length > 0) rankingSection.style.display = 'block';
+
+    let html = '';
+    top5.forEach((s, i) => {
+        let rank = i + 1;
+        let rankIcon = rank <= 3 ? `<i class="fa-solid fa-trophy"></i>` : rank;
+        let isNonstop = (s.classify || s.category || "").toLowerCase().includes('nonstop');
+        let badgeTxt = isNonstop ? 'NONSTOP' : 'TRACK';
+
+        html += `
+        <div class="ranking-item rank-${rank}" onclick="window.playSong(${danhSachGoc.findIndex(x => x.id === s.id)})" style="cursor:pointer;">
+            <div class="rank-number">${rankIcon}</div>
+            <img src="${s.aveta || 'meo.jpg'}" onerror="this.src='meo.jpg'">
+            <div class="rank-info">
+                <div class="rank-name">${s.name}</div>
+                <div class="rank-artist">${s.artist}</div>
+            </div>
+            <div class="rank-meta">
+                <span class="rank-badge">${badgeTxt}</span>
+            </div>
+            <div class="rank-stats">
+                <div class="stat-points">${s.rankingScore} pts</div>
+                <div style="display:flex; gap:10px;">
+                    <span class="stat-item"><i class="fa-solid fa-play"></i>${s.listens}</span>
+                    <span class="stat-item"><i class="fa-solid fa-heart"></i>${s.totalLikes}</span>
+                </div>
+            </div>
+        </div>`;
+    });
+    rankingList.innerHTML = html;
 }
 
 let hienThiCheDo = 'trangchu';
@@ -72,6 +136,9 @@ function setActiveNav(navId) {
 window.hienThiTimKiem = () => {
     hienThiCheDo = 'search';
     setActiveNav('nav-search');
+    const rankingSection = document.getElementById('rankingSection');
+    if(rankingSection) rankingSection.style.display = 'none';
+
     let title = document.getElementById('pageTitle');
     if(title) title.innerText = 'Tìm kiếm giai điệu';
     window.timKiem();
@@ -80,6 +147,9 @@ window.hienThiTimKiem = () => {
 window.hienThiTrangChu = () => {
     hienThiCheDo = 'trangchu';
     setActiveNav('nav-home');
+    const rankingSection = document.getElementById('rankingSection');
+    if(rankingSection) rankingSection.style.display = 'block';
+
     window.currentTabType = 'playlists';
     document.querySelectorAll('.tab-btn').forEach(b => {
         b.classList.remove('active');
@@ -152,7 +222,7 @@ window.renderNhac = (mangNhac) => {
         html += `
         <div class="card" onclick="window.playSong(${realIndex})">
             <div class="card-img-wrapper" style="position:relative;">
-                <img src="${item.aveta || 'https://via.placeholder.com/300/ff4785/fff?text=Music'}" alt="cover">
+                <img src="${item.aveta || 'meo.jpg'}" alt="cover" onerror="this.src='meo.jpg'">
                 <button class="play-btn-card"><i class="fa-solid fa-play"></i></button>
             </div>
             <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-top:12px;">
@@ -233,14 +303,20 @@ window.timKiem = () => {
     window.renderNhac(ketQua); 
 }
 
-// ENGINE CƠ BẢN (KHÔNG ĐỔI)
+// ENGINE CƠ BẢN
+
+// [KHỞI TẠO BIẾN TOÀN CỤC] (KHÔNG ĐỔI)
 window.syncDesktopFS = (song) => {
-    document.getElementById('fsImageDesk').src = song.aveta || '';
+    const fsImgDesk = document.getElementById('fsImageDesk');
+    if(fsImgDesk) { fsImgDesk.src = song.aveta || 'meo.jpg'; fsImgDesk.onerror = () => fsImgDesk.src = 'meo.jpg'; }
     document.getElementById('fsTitleDesk').innerText = song.name;
     document.getElementById('fsArtistDesk').innerText = song.artist;
-    document.getElementById('fsMiniImageDesk').src = song.aveta || '';
+    
+    const fsMiniImgDesk = document.getElementById('fsMiniImageDesk');
+    if(fsMiniImgDesk) { fsMiniImgDesk.src = song.aveta || 'meo.jpg'; fsMiniImgDesk.onerror = () => fsMiniImgDesk.src = 'meo.jpg'; }
     document.getElementById('fsMiniTitleDesk').innerText = song.name;
     document.getElementById('fsMiniArtistDesk').innerText = song.artist;
+    
     let deskLyrics = document.getElementById('fsLyricsDesk');
     if(deskLyrics) deskLyrics.innerText = (song.lyrics && song.lyrics.trim() !== '') ? song.lyrics : 'Không có lời bài hát';
     window.renderFSPlaylistDesk();
@@ -253,7 +329,7 @@ window.renderFSPlaylistDesk = () => {
     danhSachGoc.forEach((s, i) => {
         let isPlaying = i === currentSongIndex;
         html += `<li class="${isPlaying ? 'playing' : ''}" onclick="window.playSong(${i})">
-            <img src="${s.aveta || ''}" style="width:40px;height:40px;border-radius:4px;">
+            <img src="${s.aveta || 'meo.jpg'}" style="width:40px;height:40px;border-radius:4px;" onerror="this.src='meo.jpg'">
             <div class="song-info">
                 <h4 style="color:${isPlaying ? 'var(--accent-pink)' : '#fff'}">${s.name}</h4>
                 <p>${s.artist}</p>
@@ -368,14 +444,16 @@ window.playSong = (index) => {
     let song = danhSachGoc[index];
 
     // UI Bottom
-    document.getElementById('npImage').src = song.aveta || '';
+    const npImg = document.getElementById('npImage');
+    if(npImg) { npImg.src = song.aveta || 'meo.jpg'; npImg.onerror = () => npImg.src = 'meo.jpg'; }
     document.getElementById('npTitle').innerText = song.name;
     document.getElementById('npArtist').innerText = song.artist;
 
     // FS Mobile Animation
     let fsImgMob = document.getElementById('fsImageMobile');
     if (fsImgMob) {
-        fsImgMob.src = song.aveta || '';
+        fsImgMob.src = song.aveta || 'meo.jpg';
+        fsImgMob.onerror = () => fsImgMob.src = 'meo.jpg';
         let animClass = (lastSkipDirection === 'next') ? 'animate-next' : 'animate-prev';
         fsImgMob.classList.remove('animate-next', 'animate-prev');
         void fsImgMob.offsetWidth;
@@ -425,7 +503,6 @@ window.initSwipeGestures = () => {
         let dx = e.changedTouches[0].screenX - touchStartX;
         let dy = e.changedTouches[0].screenY - touchStartY;
         if (dy > 100 && Math.abs(dy) > Math.abs(dx)*1.5) fsPlayer.classList.remove('active');
-        if (dy < -80 && Math.abs(dy) > Math.abs(dx)*1.5) window.toggleLyricsMobile();
     }, {passive:true});
 
     albumArt.addEventListener('touchstart', (e) => {
@@ -445,4 +522,76 @@ window.initSwipeGestures();
 // Khởi chạy
 window.loadMusic();
 
+// COMMENT SYSTEM (GUEST VIEW)
+window.toggleCommentsMobile = () => {
+    let overlay = document.getElementById('fsCommentsOverlayMobile');
+    if(overlay) {
+        let isOpening = overlay.style.display === 'none';
+        overlay.style.display = isOpening ? 'flex' : 'none';
+        if(isOpening) window.renderBinhLuan();
+    }
+}
 
+window.renderBinhLuan = async () => {
+    let song = danhSachGoc[currentSongIndex];
+    if(!song) return;
+    
+    let listDesk = document.getElementById('commentListDesk');
+    let listMob = document.getElementById('commentListMobile');
+    if(!listDesk && !listMob) return;
+
+    let allUsers = [];
+    try {
+        let res = await fetch(ACCOUNTS_API);
+        allUsers = await res.json();
+    } catch(e) {}
+
+    let cms = [];
+    try {
+        cms = Array.isArray(song.comment_ext) ? song.comment_ext : (song.comment_ext ? JSON.parse(song.comment_ext) : []);
+    } catch(e) { cms = []; }
+
+    let html = cms.length === 0 ? `<div style="text-align:center; color:var(--text-secondary); padding:20px; font-size:13px;">Chưa có bình luận nào. Hãy là người đầu tiên! 🎤</div>` : "";
+    
+    [...cms].sort((a,b) => new Date(b.time) - new Date(a.time)).forEach(c => {
+        let user = allUsers.find(u => u.id === c.uid || u.acc === c.uid);
+        let userName = user ? (user.acc || user.user || "Người dùng ẩn danh") : "Tài khoản không tồn tại";
+        let userAva = user ? (user.avatar || user.aveta || "meo.jpg") : "meo.jpg";
+        let timeStr = new Date(c.time).toLocaleString('vi-VN', {hour:'2-digit', minute:'2-digit', day:'2-digit', month:'2-digit'});
+
+        html += `
+        <div class="comment-item">
+            <img src="${userAva}" class="comment-avatar" onerror="this.src='meo.jpg'">
+            <div class="comment-content">
+                <div class="comment-info">
+                    <span class="comment-user">${userName}</span>
+                    <span class="comment-time">${timeStr}</span>
+                </div>
+                <div class="comment-text">${c.text}</div>
+            </div>
+        </div>`;
+    });
+
+    if(listDesk) listDesk.innerHTML = html;
+    if(listMob) listMob.innerHTML = html;
+}
+
+window.guiBinhLuan = async (type) => {
+    showToast("Bạn cần đăng nhập để bình luận bài hát nhé! 😊", "info", 5000, () => window.openAuthModal());
+}
+
+window.fsSwitchSideTabDesk = (tab, el) => {
+    let p = document.getElementById('fsPlaylistDesk');
+    let l = document.getElementById('fsLyricsContainerDesk');
+    let c = document.getElementById('fsCommentsContainerDesk');
+    if(!p || !l || !c) return;
+    let tabs = el.parentElement.querySelectorAll('span');
+    tabs.forEach(t => t.classList.remove('active'));
+    el.classList.add('active');
+    
+    p.style.display = (tab === 'upnext' ? 'block' : 'none');
+    l.style.display = (tab === 'lyrics' ? 'flex' : 'none');
+    c.style.display = (tab === 'comments' ? 'flex' : 'none');
+    
+    if(tab === 'comments') window.renderBinhLuan();
+}
