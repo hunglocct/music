@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <link rel="icon" type="image/jpeg" href="logo.jpeg">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script>
+        (function() {
+            const t = localStorage.getItem('hmusic-theme') || 'dark';
+            document.documentElement.classList.add(t === 'light' ? 'light-mode' : 'dark-mode');
+            const c = localStorage.getItem('hmusic-color-theme') || 'violet';
+            document.documentElement.setAttribute('data-theme', c);
+        })();
+    </script>
+    <link rel="stylesheet" href="css/toast.css">
+    <title>H-MUSIC - Nghe nhạc (Chế độ Khách)</title>
+    <script src="auth.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/global.css">
+    <link rel="stylesheet" href="css/app.css?v=12">
+</head>
+<body>
+    <!-- GLOBAL THEME MENU -->
+    <div id="globalThemeMenu" style="display:none; position:fixed; background:var(--bg-card); padding:15px; border-radius:12px; box-shadow:0 10px 30px rgba(0,0,0,0.5); z-index:9999; flex-direction:column; gap:15px; border:1px solid var(--border-subdued);">
+        <div style="display:flex; justify-content:space-between; align-items:center; gap: 20px;">
+            <span style="font-weight:600; color:var(--text-primary);">Sáng/Tối</span>
+            <label class="theme-switch" for="themeCheckbox" style="margin:0;">
+                <input type="checkbox" id="themeCheckbox" />
+                <div class="slider round"><span class="sun-icon">☀️</span><span class="moon-icon">🌙</span></div>
+            </label>
+        </div>
+        <div>
+            <span style="font-weight:600; display:block; margin-bottom:10px; color:var(--text-primary);">Màu chủ đạo</span>
+            <div style="display:flex; justify-content:space-between;">
+                <div class="color-option" data-theme="violet" style="background:#8b5cf6; width:30px; height:30px; border-radius:50%; cursor:pointer;"></div>
+                <div class="color-option" data-theme="blue" style="background:#0ea5e9; width:30px; height:30px; border-radius:50%; cursor:pointer;"></div>
+                <div class="color-option" data-theme="green" style="background:#1ed760; width:30px; height:30px; border-radius:50%; cursor:pointer;"></div>
+                <div class="color-option" data-theme="pink" style="background:#ec4899; width:30px; height:30px; border-radius:50%; cursor:pointer;"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="app-wrapper">
+        <!-- SIDEBAR -->
+        <aside class="sidebar">
+            <div class="logo" style="display:flex; align-items:center; gap:12px; padding:0 24px 18px; cursor:pointer;" onclick="window.toggleThemeMenu(event)">
+                <img src="./logo.jpeg" alt="H-MUSIC Logo" class="app-logo">
+                <p style="padding:0; margin:0; font-size:22px;">H-MUSIC</p>
+            </div>
+
+            <ul class="nav-list">
+                <li class="nav-item active" id="nav-home" onclick="window.hienThiTrangChu()" style="cursor: pointer;"><i class="fa-solid fa-house"></i> Home</li>
+                <li class="nav-item" id="nav-search" onclick="window.hienThiTimKiem()" style="cursor: pointer;"><i class="fa-solid fa-magnifying-glass"></i> Search</li>
+                <li class="nav-item" id="nav-library" onclick="window.hienThiThuVien()" style="cursor: pointer;"><i class="fa-solid fa-book-open"></i> Your Library</li>
+            </ul>
+
+            <ul class="nav-list nav-group-mt">
+                <li class="nav-item" id="nav-playlist" onclick="window.hienThiMyPlaylist()" style="cursor:pointer;"><i class="fa-solid fa-square-plus" style="background: #b3b3b3; color: #000; padding:2px; border-radius:2px;"></i> Danh Sách Phát</li>
+                <li class="nav-item" id="nav-fav" onclick="window.hienThiYeuThich()" style="cursor: pointer;">
+                    <i class="fa-solid fa-heart" style="background: linear-gradient(135deg, #ff4785, #ffb3c6); -webkit-background-clip: text; background-clip: text; color: transparent;"></i> Liked Songs
+                </li>
+                <li class="nav-item" id="nav-history" onclick="window.hienThiLichSu()" style="cursor: pointer;">
+                    <i class="fa-solid fa-clock-rotate-left"></i> Lịch Sử Nghe
+                </li>
+            </ul>
+
+            <div class="divider"></div>
+
+            <ul class="playlist-list" id="sidebarPlaylistContainer">
+            </ul>
+        </aside>
+
+        <!-- MAIN CONTENT CHÍNH -->
+        <main class="main-view">
+            <!-- TOPBAR -->
+            <header class="topbar">
+                <div class="topbar-left">
+                    <div class="mobile-logo" style="display:none; align-items:center; cursor:pointer;" onclick="window.toggleThemeMenu(event)">
+                        <img src="./logo.jpeg" class="app-logo" style="width:32px; height:32px; border-width:1px;">
+                    </div>
+                    
+                    <div class="category-tabs" style="margin-left: 20px;">
+                        <button class="tab-btn active" onclick="window.filterTab('playlists', this)">Playlists</button>
+                        <button class="tab-btn" onclick="window.filterTab('artists', this)">Artists</button>
+                        <button class="tab-btn" onclick="window.filterTab('albums', this)">Albums</button>
+                    </div>
+                </div>
+
+                <div class="topbar-right">
+                    <div class="search-container">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                        <input type="text" class="search-input" id="searchInput" placeholder="Tìm kiếm bài hát, tác giả..." onfocus="window.hienThiTimKiem()" oninput="window.timKiemDelay()">
+                    </div>
+
+                    <button class="profile-btn" id="userProfileName" onclick="window.openAuthModal()">
+                        <img src="https://via.placeholder.com/28/ff4785/fff?text=?" alt="Login">
+                        Đăng Nhập / Đăng Ký
+                    </button>
+                </div>
+            </header>
+
+            <!-- NỘI DUNG CONTENT -->
+            <div class="content">
+                <div class="section-header">
+                    <h2 id="pageTitle">Gợi Ý Cho Bạn</h2>
+                    <a href="#">Show all</a>
+                </div>
+                
+                <div class="card-grid" id="songGrid">
+                    <div style="grid-column: 1 / -1; text-align: center; color: var(--text-secondary); font-size: 18px; padding: 50px;">
+                        <i class="fa-solid fa-spinner fa-spin"></i> Đang tải nhạc...
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- BOTTOM PLAYER -->
+    <footer class="now-playing-bar">
+        <audio id="mainAudio" src=""></audio>
+        <div class="np-left" style="cursor: pointer;" onclick="document.getElementById('fsPlayer').classList.add('active')" title="Phóng to">
+            <img id="npImage" src="https://via.placeholder.com/56/181818/181818" class="np-img" alt="Cover">
+            <div class="np-info">
+                <div class="np-title" id="npTitle">-----</div>
+                <div class="np-artist" id="npArtist">-----</div>
+            </div>
+            <button class="np-like" onclick="event.stopPropagation(); window.openAuthModal()"><i class="fa-regular fa-heart"></i></button>
+        </div>
+
+        <div class="np-center">
+            <div class="player-controls">
+                <button class="btn-ctrl"><i class="fa-solid fa-shuffle"></i></button>
+                <button class="btn-ctrl" onclick="window.playPrev()"><i class="fa-solid fa-backward-step"></i></button>
+                <button class="btn-play-pause" id="btnPlayPause" onclick="window.togglePlay()"><i class="fa-solid fa-play"></i></button>
+                <button class="btn-ctrl" onclick="window.playNext()"><i class="fa-solid fa-forward-step"></i></button>
+                <button class="btn-ctrl"><i class="fa-solid fa-repeat"></i></button>
+            </div>
+            
+            <div class="playback-bar">
+                <span id="timeCurrent">0:00</span>
+                <div class="progress-container" id="progressContainer" onclick="window.seekAudio(event)">
+                    <div class="progress-bg"><div class="progress-bar" id="progressBar"></div></div>
+                    <div class="progress-thumb" id="progressThumb"></div>
+                </div>
+                <span id="timeTotal">0:00</span>
+            </div>
+        </div>
+
+        <div class="np-right">
+            <button><i class="fa-solid fa-microphone"></i></button>
+            <button><i class="fa-solid fa-list"></i></button>
+            <button><i class="fa-solid fa-laptop-medical"></i></button>
+            <div class="volume-bar">
+                <button style="margin-right: 8px;"><i class="fa-solid fa-volume-high"></i></button>
+                <div class="progress-container" style="flex:1" onclick="window.seekVolume(event)">
+                    <div class="progress-bg"><div class="progress-bar" id="volumeBar" style="width: 100%;"></div></div>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- FULLSCREEN PLAYER OVERLAY -->
+    <div id="fsPlayer" class="fs-player">
+        <div class="fs-bg-blur" id="fsBgBlur"></div>
+        <div class="fs-bg-overlay"></div>
+        <button class="fs-close desktop-only" onclick="document.getElementById('fsPlayer').classList.remove('active')"><i class="fa-solid fa-chevron-down"></i></button>
+
+        <div class="app-container desktop-only">
+            <div class="main-content">
+                <div class="album-display">
+                    <img id="fsImageDesk" src="https://via.placeholder.com/600" alt="Album Cover">
+                    <h1 id="fsTitleDesk">-----</h1>
+                    <p id="fsArtistDesk">-----</p>
+                </div>
+                <div class="side-panel">
+                    <div class="tabs">
+                        <span class="active" onclick="window.fsSwitchSideTabDesk('upnext', this)">TIẾP THEO</span>
+                        <span onclick="window.fsSwitchSideTabDesk('lyrics', this)">LỜI BÀI HÁT</span>
+                    </div>
+                    <ul class="playlist" id="fsPlaylistDesk"></ul>
+                    <div id="fsLyricsContainerDesk" style="display:none; flex:1; overflow-y:auto; padding-right:10px; text-align:center;">
+                        <p id="fsLyricsDesk" style="font-size:18px; color:#cbd5e1; white-space:pre-wrap; line-height:2; display:flex; flex-direction:column; justify-content:center; min-height:100%;">Không có lời bài hát</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bottom-bar">
+                <div class="now-playing-mini">
+                    <img id="fsMiniImageDesk" src="https://via.placeholder.com/100" alt="Thumb">
+                    <div>
+                        <h4 id="fsMiniTitleDesk">-----</h4>
+                        <p id="fsMiniArtistDesk">-----</p>
+                    </div>
+                    <i class="fa-regular fa-heart" id="fsLikeIconDesk" onclick="window.openAuthModal()"></i>
+                </div>
+
+                <div class="player-controls">
+                    <div class="control-buttons">
+                        <i class="fa-solid fa-shuffle"></i>
+                        <i class="fa-solid fa-backward-step" onclick="window.playPrev()"></i>
+                        <div class="play-pause-btn" id="fsBtnPlayPauseDesk" onclick="window.togglePlay()"><i class="fa-solid fa-play"></i></div>
+                        <i class="fa-solid fa-forward-step" onclick="window.playNext()"></i>
+                        <i class="fa-solid fa-repeat"></i>
+                    </div>
+                    <div class="progress-bar-container">
+                        <span id="fsTimeCurrentDesk">0:00</span>
+                        <input type="range" id="fsProgressRangeDesk" min="0" max="100" value="0" step="0.1" oninput="window.seekAudioRangeDesk(this.value)">
+                        <span id="fsTimeTotalDesk">0:00</span>
+                    </div>
+                </div>
+
+                <div class="volume-controls">
+                    <i class="fa-solid fa-volume-high"></i>
+                    <input type="range" id="fsVolumeRangeDesk" min="0" max="100" value="100" step="1" oninput="window.seekVolumeRangeDesk(this.value)">
+                    <i class="fa-solid fa-laptop-medical"></i>
+                    <i class="fa-solid fa-ellipsis"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="mobile-app ytm-mobile-only">
+            <div class="top-nav">
+                <i class="fa-solid fa-chevron-down" onclick="document.getElementById('fsPlayer').classList.remove('active')"></i>
+                <span>Đang phát từ Danh sách</span>
+                <i class="fa-solid fa-ellipsis-vertical"></i>
+            </div>
+            <img id="fsImageMobile" src="https://via.placeholder.com/800" alt="Album Art" class="album-art">
+            <div class="song-info">
+                <div class="song-texts">
+                    <h2 id="fsTitleMobile">-----</h2>
+                    <p id="fsArtistMobile">-----</p>
+                </div>
+                <i class="fa-regular fa-heart" id="fsLikeIconMobile" onclick="window.openAuthModal()"></i>
+            </div>
+            <div class="progress-area">
+                <div class="progress-bar" id="fsProgressContainerMobile" onclick="window.seekAudioMobile(event)">
+                    <div class="progress-fill" id="fsProgressBarMobile" style="width: 0%;"></div>
+                </div>
+                <div class="time-info">
+                    <span id="fsTimeCurrentMobile">0:00</span>
+                    <span id="fsTimeTotalMobile">0:00</span>
+                </div>
+            </div>
+            <div class="controls">
+                <i class="fa-solid fa-shuffle"></i>
+                <i class="fa-solid fa-backward-step" onclick="window.playPrev()"></i>
+                <div class="play-pause" id="fsBtnPlayPauseMobile" onclick="window.togglePlay()"><i class="fa-solid fa-play"></i></div>
+                <i class="fa-solid fa-forward-step" onclick="window.playNext()"></i>
+                <i class="fa-solid fa-repeat"></i>
+            </div>
+            <div class="lyrics-pull" onclick="window.toggleLyricsMobile()">
+                <i class="fa-solid fa-chevron-up"></i>
+                <span>Lời bài hát</span>
+            </div>
+            <div id="fsLyricsOverlayMobile" style="display:none; position:absolute; top:0; left:0; width:100%; height:100%; background:rgba(15, 23, 42, 0.75); backdrop-filter:blur(35px); -webkit-backdrop-filter:blur(35px); z-index:100; flex-direction:column; padding:60px 25px 35px;">
+                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:30px;">
+                     <h3 style="font-size:22px; font-weight:800; color:#fff; margin:0;">Lời bài hát</h3>
+                     <i class="fa-solid fa-chevron-down" onclick="window.toggleLyricsMobile()" style="font-size:28px; color:#fff; cursor:pointer; padding:5px;"></i>
+                 </div>
+                 <div style="flex:1; overflow-y:auto; text-align:center;">
+                     <p id="fsLyricsMobile" style="font-size:22px; line-height:1.8; color:rgba(255,255,255,0.95); white-space:pre-wrap; font-weight:500;">Không có lời bài hát</p>
+                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- AUTH MODAL FOR GUESTS -->
+    <div id="authModalOverlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); z-index:10000; align-items:center; justify-content:center; padding:20px;">
+        <div style="background:var(--bg-card); width:100%; max-width:400px; padding:35px; border-radius:30px; border:1px solid var(--border-subdued); text-align:center; box-shadow:0 20px 50px rgba(0,0,0,0.5);">
+            <img src="./logo.jpeg" style="width:64px; height:64px; border-radius:12px; margin-bottom:20px;">
+            <h2 style="color:var(--text-primary); margin-bottom:12px; font-size:24px;">Bạn chưa đăng nhập</h2>
+            <p style="color:var(--text-secondary); margin-bottom:30px; line-height:1.6;">Đăng nhập để lưu bài hát yêu thích và tạo playlist cá nhân của riêng mình nhé!</p>
+            <div style="display:flex; flex-direction:column; gap:12px;">
+                <button onclick="window.location.href='dawngnhap.html'" style="padding:14px; border-radius:30px; background:var(--accent-pink); color:#fff; border:none; font-weight:700; cursor:pointer; font-size:16px;">Đăng Nhập Ngay</button>
+                <button onclick="window.location.href='dangki.html'" style="padding:14px; border-radius:30px; background:rgba(255,255,255,0.05); color:var(--text-primary); border:1px solid var(--border-subdued); font-weight:600; cursor:pointer; font-size:16px;">Tạo Tài Khoản Mới</button>
+                <button onclick="window.closeAuthModal()" style="margin-top:10px; background:none; border:none; color:var(--text-secondary); cursor:pointer; font-size:14px;">Bỏ qua</button>
+            </div>
+        </div>
+    </div>
+    
+    <script src="js/theme.js"></script>
+    <script src="js/index.js"></script>
+    <script src="js/toast.js"></script>
+</body>
+</html>

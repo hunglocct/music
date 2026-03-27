@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <link rel="icon" type="image/jpeg" href="logo.jpeg">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script>
+        (function() {
+            const t = localStorage.getItem('hmusic-theme') || 'dark';
+            document.documentElement.classList.add(t === 'light' ? 'light-mode' : 'dark-mode');
+            const c = localStorage.getItem('hmusic-color-theme') || 'violet';
+            document.documentElement.setAttribute('data-theme', c);
+        })();
+    </script>
+    <title>Đăng Ký - H-MUSIC</title>
+    <link rel="stylesheet" href="css/global.css">
+    <link rel="stylesheet" href="css/dangki.css">
+    <link rel="stylesheet" href="css/toast.css">
+</head>
+<body>
+    <div class="login-container">
+        <form class="login-form" id="registerForm">
+            <img src="./logo.jpeg" alt="H-MUSIC Logo" class="auth-logo">
+            <h2>Tạo tài khoản mới</h2>
+            <h1>H-MUSIC</h1>
+            <p>Tham gia cùng chúng tôi để nghe nhạc thả ga</p>
+            
+            <div class="input-group">
+                <input type="text" id="accInput" placeholder="Tên đăng nhập (acc)" required>
+            </div>
+            
+            <div class="input-group">
+                <input type="email" id="emailInput" placeholder="Email của bạn" required>
+            </div>
+            
+            <div class="input-group">
+                <input type="password" id="passInput" placeholder="Mật khẩu" required>
+            </div>
+            
+            <button type="submit" class="login-btn">Đăng Ký</button>
+            
+            <div class="options">
+                <span>Đã có tài khoản? <a href="dawngnhap.html">Đăng nhập ngay</a></span>
+            </div>
+        </form>
+    </div>
+    
+    <div style="position:fixed; top:20px; right:20px; z-index:9999;">
+        <label class="theme-switch" for="themeCheckbox">
+            <input type="checkbox" id="themeCheckbox" />
+            <div class="slider round">
+                <span class="sun-icon">☀️</span><span class="moon-icon">🌙</span>
+            </div>
+        </label>
+    </div>
+    
+    <script src="js/dangki.js"></script>
+    <script src="js/toast.js"></script>
+    <script src="js/theme.js"></script>
+</body>
+</html>
+

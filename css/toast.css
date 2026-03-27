@@ -1,0 +1,87 @@
+/* Toast Container - Top Right (Below Header) */
+#hmusic-toast-container {
+    position: fixed;
+    top: 85px; /* Avoiding 75px header */
+    right: 20px;
+    z-index: 10000;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    pointer-events: none;
+}
+
+/* Individual Toast */
+.hmusic-toast {
+    pointer-events: auto;
+    min-width: 250px;
+    max-width: 350px;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 12px;
+    padding: 12px 16px;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    animation: toastSlideInRight 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    transition: all 0.4s ease;
+}
+
+.hmusic-toast.clickable {
+    cursor: pointer;
+}
+
+.hmusic-toast.clickable:hover {
+    background: rgba(255, 255, 255, 0.15);
+    transform: translateY(-2px);
+}
+
+/* Status Colors */
+.hmusic-toast.success { border-left: 5px solid #1ed760; }
+.hmusic-toast.error { border-left: 5px solid #ff4757; }
+.hmusic-toast.warning { border-left: 5px solid #ffa502; }
+.hmusic-toast.info { border-left: 5px solid #8b5cf6; }
+
+/* Light Mode Support */
+.light-mode .hmusic-toast {
+    background: rgba(255, 255, 255, 0.85);
+    color: #333;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+.toast-content {
+    flex: 1;
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1.4;
+}
+
+.toast-close {
+    cursor: pointer;
+    font-size: 14px;
+    opacity: 0.5;
+    transition: 0.2s;
+    padding: 2px;
+    z-index: 2;
+}
+.toast-close:hover { opacity: 1; transform: scale(1.1); }
+
+/* Animations - Slide from Right */
+@keyframes toastSlideInRight {
+    from { opacity: 0; transform: translateX(100%) scale(0.9); }
+    to { opacity: 1; transform: translateX(0) scale(1); }
+}
+
+@keyframes toastFadeOut {
+    from { opacity: 1; transform: scale(1); }
+    to { opacity: 0; transform: scale(0.8); }
+}
+
+.toast-fade-out {
+    animation: toastFadeOut 0.3s ease forwards;
+}

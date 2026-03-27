@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Trình Phát Nhạc Mobile</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        /* === RESET & CƠ BẢN === */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+            color: #ffffff;
+            /* Chống highlight khi chạm trên mobile */
+            -webkit-tap-highlight-color: transparent; 
+        }
+
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #000; /* Nền đen cho desktop preview */
+        }
+
+        /* Hình nền mờ phía sau app */
+        .background {
+            position: absolute;
+            top: -10%; left: -10%; right: -10%; bottom: -10%;
+            background-image: url('https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?q=80&w=1000&auto=format&fit=crop');
+            background-size: cover;
+            background-position: center;
+            filter: blur(30px) brightness(0.4);
+            z-index: 0;
+        }
+
+        /* === KHUNG ĐIỆN THOẠI === */
+        .mobile-app {
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            max-width: 400px; /* Giới hạn kích thước giống điện thoại */
+            height: 100vh;
+            max-height: 850px;
+            background: rgba(15, 23, 42, 0.4);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            flex-direction: column;
+            padding: 30px 25px;
+            overflow: hidden;
+            box-shadow: 0 0 50px rgba(0,0,0,0.8);
+        }
+
+        /* Desktop giả lập bo góc điện thoại */
+        @media (min-width: 450px) {
+            .mobile-app {
+                border-radius: 40px;
+                height: 85vh;
+            }
+        }
+
+        /* === THANH ĐIỀU HƯỚNG TRÊN CÙNG === */
+        .top-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 40px;
+        }
+
+        .top-nav i {
+            font-size: 20px;
+            color: #cbd5e1;
+            cursor: pointer;
+            padding: 10px;
+        }
+
+        .top-nav span {
+            font-size: 13px;
+            font-weight: 600;
+            letter-spacing: 1.5px;
+            color: #94a3b8;
+            text-transform: uppercase;
+        }
+
+        /* === ẢNH BÌA ALBUM === */
+        .album-art {
+            width: 100%;
+            aspect-ratio: 1 / 1; /* Hình vuông */
+            border-radius: 30px;
+            object-fit: cover;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+            margin-bottom: 40px;
+        }
+
+        /* === THÔNG TIN BÀI HÁT === */
+        .song-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .song-texts h2 {
+            font-size: 26px;
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+
+        .song-texts p {
+            font-size: 16px;
+            color: #94a3b8;
+        }
+
+        .song-info i {
+            font-size: 24px;
+            color: #cbd5e1;
+            cursor: pointer;
+        }
+        
+        .song-info i:hover, .song-info i.active {
+            color: #ef4444; /* Đỏ khi thả tim */
+        }
+
+        /* === THANH TIẾN TRÌNH === */
+        .progress-area {
+            margin-bottom: 40px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: rgba(255,255,255,0.15);
+            border-radius: 10px;
+            position: relative;
+            cursor: pointer;
+            margin-bottom: 12px;
+        }
+
+        .progress-fill {
+            position: absolute;
+            top: 0; left: 0;
+            height: 100%;
+            width: 35%; /* Giả lập đang phát 35% */
+            background: #3b82f6;
+            border-radius: 10px;
+        }
+
+        .progress-fill::after {
+            content: '';
+            position: absolute;
+            right: -6px; top: -3px;
+            width: 12px; height: 12px;
+            background: #fff;
+            border-radius: 50%;
+            box-shadow: 0 0 5px rgba(0,0,0,0.5);
+        }
+
+        .time-info {
+            display: flex;
+            justify-content: space-between;
+            font-size: 13px;
+            color: #94a3b8;
+            font-weight: 500;
+        }
+
+        /* === NÚT ĐIỀU KHIỂN CHÍNH === */
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 10px;
+        }
+
+        .controls i {
+            font-size: 22px;
+            color: #cbd5e1;
+            cursor: pointer;
+        }
+
+        /* Chỉnh kích thước nút Next/Prev lớn hơn nút Trộn/Lặp */
+        .controls i.fa-step-backward, 
+        .controls i.fa-step-forward {
+            font-size: 28px;
+            color: #fff;
+        }
+
+        /* Nút Play to nhất, nổi bật */
+        .play-pause {
+            width: 75px;
+            height: 75px;
+            background: #3b82f6;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 10px 25px rgba(59, 130, 246, 0.4);
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .play-pause:active {
+            transform: scale(0.95);
+        }
+
+        .play-pause i {
+            font-size: 28px;
+            color: #fff;
+            margin-left: 4px; /* Căn giữa icon play */
+        }
+
+        /* Lời bài hát thu gọn (Vuốt lên) */
+        .lyrics-pull {
+            margin-top: auto; /* Đẩy xuống đáy */
+            text-align: center;
+            padding-bottom: 10px;
+            color: #94a3b8;
+            font-size: 14px;
+            font-weight: 500;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+            cursor: pointer;
+        }
+
+        .lyrics-pull i {
+            font-size: 16px;
+            animation: bounce 2s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+            40% { transform: translateY(-5px); }
+            60% { transform: translateY(-3px); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="background"></div>
+
+    <div class="mobile-app">
+        
+        <div class="top-nav">
+            <i class="fas fa-chevron-down" title="Thu nhỏ"></i>
+            <span>Đang phát từ Danh sách</span>
+            <i class="fas fa-ellipsis-v" title="Tuỳ chọn"></i>
+        </div>
+
+        <img src="https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?q=80&w=800&auto=format&fit=crop" alt="Album Art" class="album-art">
+
+        <div class="song-info">
+            <div class="song-texts">
+                <h2>Đêm mộng mị</h2>
+                <p>Aura Dynamics</p>
+            </div>
+            <i class="far fa-heart" title="Yêu thích"></i>
+        </div>
+
+        <div class="progress-area">
+            <div class="progress-bar">
+                <div class="progress-fill"></div>
+            </div>
+            <div class="time-info">
+                <span>01:24</span>
+                <span>04:12</span>
+            </div>
+        </div>
+
+        <div class="controls">
+            <i class="fas fa-random" title="Trộn bài"></i>
+            <i class="fas fa-step-backward" title="Bài trước"></i>
+            
+            <div class="play-pause">
+                <i class="fas fa-play"></i>
+            </div>
+            
+            <i class="fas fa-step-forward" title="Bài tiếp theo"></i>
+            <i class="fas fa-redo" title="Lặp lại"></i>
+        </div>
+
+        <div class="lyrics-pull">
+            <i class="fas fa-chevron-up"></i>
+            <span>Lời bài hát</span>
+        </div>
+
+    </div>
+
+</body>
+</html>

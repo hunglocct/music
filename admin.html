@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <link rel="icon" type="image/jpeg" href="logo.jpeg">
+    <script>
+        (function() {
+            const t = localStorage.getItem('hmusic-theme') || 'dark';
+            document.documentElement.classList.add(t === 'light' ? 'light-mode' : 'dark-mode');
+            const c = localStorage.getItem('hmusic-color-theme') || 'violet';
+            document.documentElement.setAttribute('data-theme', c);
+        })();
+    </script>
+    <title>Admin - H-MUSIC</title>
+    <script src="auth.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/global.css">
+    <link rel="stylesheet" href="css/admin.css">
+    <link rel="stylesheet" href="css/toast.css">
+</head>
+<body>
+    <!-- GLOBAL THEME MENU -->
+    <div id="globalThemeMenu" style="display:none; position:fixed; background:var(--bg-card); padding:15px; border-radius:12px; box-shadow:0 10px 30px rgba(0,0,0,0.5); z-index:9999; flex-direction:column; gap:15px; border:1px solid var(--border-subdued);">
+        <div style="display:flex; justify-content:space-between; align-items:center; gap: 20px;">
+            <span style="font-weight:600; color:var(--text-primary);">Sáng/Tối</span>
+            <label class="theme-switch" for="themeCheckbox" style="margin:0;">
+                <input type="checkbox" id="themeCheckbox" />
+                <div class="slider round"><span class="sun-icon">☀️</span><span class="moon-icon">🌙</span></div>
+            </label>
+        </div>
+        <div>
+            <span style="font-weight:600; display:block; margin-bottom:10px; color:var(--text-primary);">Màu chủ đạo</span>
+            <div style="display:flex; justify-content:space-between;">
+                <div class="color-option" data-theme="violet" style="background:#8b5cf6; width:30px; height:30px; border-radius:50%; cursor:pointer;"></div>
+                <div class="color-option" data-theme="blue" style="background:#0ea5e9; width:30px; height:30px; border-radius:50%; cursor:pointer;"></div>
+                <div class="color-option" data-theme="green" style="background:#1ed760; width:30px; height:30px; border-radius:50%; cursor:pointer;"></div>
+                <div class="color-option" data-theme="pink" style="background:#ec4899; width:30px; height:30px; border-radius:50%; cursor:pointer;"></div>
+            </div>
+        </div>
+    </div>
+    <aside class="sidebar">
+        <a class="sidebar-brand" style="text-decoration:none; gap: 15px; font-size: 16px; cursor:pointer; height: auto; padding: 15px 10px; justify-content: flex-start;" onclick="window.toggleThemeMenu(event)">
+            <img src="./logo.jpeg" alt="Admin Logo" class="app-logo" style="width: 45px; height: 45px;">
+            <div style="display: flex; flex-direction: column; align-items: flex-start; gap: 2px;">
+                <span style="font-weight: 800; font-size: 18px; color: var(--accent-pink);">HUNG</span>
+                <span id="adminGreeting" style="font-size: 11px; font-weight: 500; color: var(--text-secondary); white-space: nowrap;">Chào buổi...</span>
+            </div>
+        </a>
+        <ul class="sidebar-nav">
+            <li class="nav-title">Hệ Thống</li>
+            <a onclick="window.switchView('view-dashboard', this)" class="nav-item active" style="text-decoration:none;">✨ Dashboard</a>
+            <a onclick="window.switchView('view-songs', this)" class="nav-item" style="text-decoration:none;">🎵 Quản lý Bài hát</a>
+            <a onclick="window.switchView('view-accounts', this)" class="nav-item" style="text-decoration:none;">👤 Quản lý Tài khoản</a>
+            <a onclick="window.switchView('view-demo', this)" class="nav-item" style="text-decoration:none;">👁️ Trải nghiệm User</a>
+        </ul>
+    </aside>
+    
+    <div class="main-wrapper">
+        <header class="header">
+            <div style="display:flex; align-items:center; gap: 15px;">
+                <div class="mobile-logo-admin" style="display:none; align-items:center; cursor:pointer;" onclick="window.toggleThemeMenu(event)">
+                    <img src="./logo.jpeg" class="app-logo" style="width:32px; height:32px; border-width:1px;">
+                </div>
+                <div class="breadcrumb" id="top-breadcrumb">Admin / Tổng quan</div>
+            </div>
+            
+            <div style="display: flex; align-items: center;">
+                <button onclick="window.logout()" style="background:#ef4444; color:white; border:none; padding:6px 12px; border-radius:8px; cursor:pointer; font-weight: 600;"><i class="fa-solid fa-right-from-bracket"></i> Thoát</button>
+            </div>
+        </header>
+
+        <main class="content">
+            
+            <!-- VIEW 1: DASHBOARD -->
+            <div id="view-dashboard" class="admin-view active">
+                <div class="stats-row">
+                    <div class="stat-card bg-pink">
+                        <h3 id="totalSongs">0</h3><p>Bài hát trong kho</p>
+                    </div>
+                    <div class="stat-card bg-peach">
+                        <h3 id="totalViews">0</h3><p>Tổng lượt nghe</p>
+                    </div>
+                </div>
+                <p style="text-align:center; padding: 40px; color: var(--text-secondary);">Quản trị viên có thể xem thông tin tổng quát hệ thống ở đây. Chọn các Tab ở Menu trái để chuyển đổi chức năng mượt mà.</p>
+            </div>
+
+            <!-- VIEW 2: MANAGE SONGS -->
+            <div id="view-songs" class="admin-view" style="display:none;">
+                <div class="card">
+                    <div class="card-header">🎵 Thêm Bài Hát Mới</div>
+                    <div class="input-group">
+                        <input type="text" id="title" placeholder="Tên bài hát...">
+                        <input type="text" id="artist" placeholder="Ca sĩ...">
+                        <input type="text" id="category" placeholder="Nhập thể loại (VD: Lofi, Rap)...">
+                    </div>
+                    <div class="input-group">
+                        <input type="text" id="link" placeholder="Link nhạc (MP3)...">
+                        <input type="text" id="aveta" placeholder="Link ảnh Avatar...">
+                        <input type="number" id="listens" placeholder="Lượt nghe" style="max-width: 120px;">
+                        <select id="classify" style="padding: 12px; border: 1px solid var(--border-subdued); border-radius: 8px; background: var(--bg-base); color: var(--text-primary); max-width: 120px;" title="Phân loại">
+                            <option value="">Loại...</option>
+                            <option value="Track">Track</option>
+                            <option value="Nonstop">Nonstop</option>
+                        </select>
+                        <button class="btn-primary" onclick="window.saveMus()">+ Lưu Bài Hát</button>
+                    </div>
+                    <div class="input-group" style="margin-top: -12px; margin-bottom: 24px;">
+                        <textarea id="lyrics" placeholder="Nhập lời bài hát vào đây (nếu không có thì để trống)..." style="width:100%; height:100px; padding:12px; border-radius:8px; border:1px solid var(--border-subdued); background:var(--bg-base); color:var(--text-primary); font-family:inherit; resize:vertical;"></textarea>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <h3 style="margin: 0; color: var(--text-primary); font-size: 16px;">Danh sách bài hát</h3>
+                        <div style="position: relative;">
+                            <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-secondary);"></i>
+                            <input type="text" id="searchSongAdmin" placeholder="Tìm kiếm / Lọc..." style="padding: 8px 12px 8px 36px; border: 1px solid var(--border-subdued); border-radius: 8px; background: var(--bg-base); color: var(--text-primary); outline: none;" oninput="window.filterSongsAdmin()">
+                        </div>
+                    </div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Ảnh</th><th>Bài hát</th><th>Thể loại</th><th>Phân loại</th><th>Lượt nghe</th><th>Trình phát</th><th>Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody id="songTable"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- VIEW 3: MANAGE ACCOUNTS -->
+            <div id="view-accounts" class="admin-view" style="display:none;">
+                <div class="card">
+                    <div class="card-header">👤 Thêm Tài Khoản Mới</div>
+                    <div class="input-group">
+                        <input type="text" id="acc" placeholder="Tên đăng nhập (acc)...">
+                        <input type="email" id="email" placeholder="Email...">
+                        <div style="position:relative; flex:1; display:flex;">
+                            <input type="password" id="pass" placeholder="Mật khẩu..." style="width:100%; border:1px solid var(--border-subdued); border-radius:8px; padding:12px; background:var(--bg-base); color:var(--text-primary);">
+                            <i class="fa-solid fa-eye" style="position:absolute; right:15px; top:50%; transform:translateY(-50%); cursor:pointer; color:var(--text-secondary);" onclick="
+                                let p = document.getElementById('pass'); 
+                                if(p.type==='password'){ p.type='text'; this.classList.remove('fa-eye'); this.classList.add('fa-eye-slash'); }
+                                else { p.type='password'; this.classList.remove('fa-eye-slash'); this.classList.add('fa-eye'); }
+                            "></i>
+                        </div>
+                        <button class="btn-primary" onclick="window.saveAcc()">+ Lưu Tài Khoản</button>
+                    </div>
+
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th><th>Tên đăng nhập</th><th>Email</th><th>Mật khẩu</th><th>Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody id="accountTable"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- VIEW 4: USER DEMO IFRAME -->
+            <div id="view-demo" class="admin-view" style="display:none; padding: 0; overflow: hidden; height: calc(100vh - 120px);">
+                <div class="card" style="padding: 0; overflow: hidden; height: 100%;">
+                    <div class="card-header" style="margin: 0; padding: 15px 24px; border-bottom: 1px solid var(--border-subdued); background: var(--bg-card);">👁️ Giao diện Người dùng thu nhỏ</div>
+                    <iframe src="app.html" style="width: 100%; height: calc(100% - 54px); border: none; border-radius: 0 0 16px 16px;"></iframe>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- MAIN SPA JS ENGINE -->
+    <script src="js/admin_app.js"></script>
+    <script src="js/theme.js"></script>
+    <script src="js/toast.js"></script>
+</body>
+</html>

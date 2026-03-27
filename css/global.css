@@ -1,0 +1,145 @@
+/* css/global.css */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+/* MẶC ĐỊNH LÀ GIAO DIỆN TỐI (DARK MODE) */
+:root {
+  --bg-base: #000000;
+  --bg-main: #121212;
+  --bg-card: #181818;
+  --bg-card-hover: #282828;
+  --text-primary: #ffffff;
+  --text-secondary: #b3b3b3;
+  --border-subdued: #282828;
+  
+  --radius-sm: 8px;
+  --radius-md: 16px;
+  --radius-pill: 50px;
+}
+
+/* CHẾ ĐỘ SÁNG (LIGHT MODE) CHỈ ĐỔI NỀN / CHỮ */
+.light-mode {
+  --bg-base: #f1f5f9;
+  --bg-main: #ffffff;
+  --bg-card: #f8fafc;
+  --bg-card-hover: #e2e8f0;
+  --text-primary: #0f172a;
+  --text-secondary: #64748b;
+  --border-subdued: #cbd5e1;
+}
+
+.dark-mode {
+  --bg-base: #000000;
+  --bg-main: #121212;
+  --bg-card: #181818;
+  --bg-card-hover: #282828;
+  --text-primary: #ffffff;
+  --text-secondary: #b3b3b3;
+  --border-subdued: #282828;
+}
+
+/* PALETTE MÀU SẮC CHỈ ĐỔI MÀU NHẤN CHÍNH (ACCENT) */
+/* Chủ đề: Ocean Blue */
+[data-theme="blue"] {
+  --accent-pink: #0ea5e9;
+  --accent-pink-hover: #38bdf8;
+}
+
+/* Chủ đề: Spotify Green */
+[data-theme="green"] {
+  --accent-pink: #1ed760;
+  --accent-pink-hover: #1db954;
+}
+
+/* Chủ đề: Pink Melody */
+[data-theme="pink"] {
+  --accent-pink: #ec4899;
+  --accent-pink-hover: #f472b6;
+}
+
+/* Chủ đề: Violet (Default) */
+[data-theme="violet"] {
+  --accent-pink: #8b5cf6;
+  --accent-pink-hover: #a78bfa;
+}
+
+* {
+  margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif;
+}
+
+body {
+  background-color: var(--bg-base);
+  color: var(--text-primary);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Animations Toàn Trang */
+@keyframes fadeUp {
+  0% { opacity: 0; transform: translateY(20px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+.fade-up {
+  animation: fadeUp 0.5s ease forwards;
+}
+
+.card {
+  border-radius: var(--radius-md) !important;
+  animation: fadeUp 0.4s ease forwards;
+  opacity: 0;
+}
+.card:nth-child(1) { animation-delay: 0.05s; }
+.card:nth-child(2) { animation-delay: 0.1s; }
+.card:nth-child(3) { animation-delay: 0.15s; }
+.card:nth-child(4) { animation-delay: 0.2s; }
+.card:nth-child(5) { animation-delay: 0.25s; }
+.card:nth-child(n+6) { animation-delay: 0.3s; }
+
+.card-img-wrapper {
+  border-radius: var(--radius-sm) !important;
+}
+
+button {
+  transition: all 0.2s ease;
+  border-radius: var(--radius-pill) !important;
+}
+
+/* Smooth Scrollbar */
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-subdued); border-radius: var(--radius-pill); }
+::-webkit-scrollbar-thumb:hover { background: var(--accent-pink); }
+
+/* GLOBAL LOGO STYLES */
+.app-logo {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    object-fit: cover;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    border: 2px solid var(--accent-pink);
+    transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+.app-logo:hover {
+    transform: rotate(10deg) scale(1.1);
+    box-shadow: 0 6px 15px rgba(30, 215, 96, 0.4);
+}
+
+.auth-logo {
+    width: 90px;
+    height: 90px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin: 0 auto 15px auto;
+    display: block;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.5);
+    border: 3px solid var(--accent-pink);
+    transition: transform 0.4s ease;
+}
+.auth-logo:hover {
+    transform: translateY(-5px) scale(1.05);
+}
+
+.mobile-logo, .mobile-logo-admin { display: none !important; }
+@media (max-width: 768px) {
+    .mobile-logo, .mobile-logo-admin { display: flex !important; }
+}
